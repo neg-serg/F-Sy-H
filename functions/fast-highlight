@@ -994,10 +994,11 @@ typeset -ga ZLAST_COMMANDS
         *)
                  if [[ $__arg == */* || $__arg == *.* ]]; then
                    local ext="${__arg##*.}"
-                   if [[ -n ${FAST_THEME_NAME}file-extensions-${ext} ]]; then
+                   local key="${FAST_THEME_NAME}file-extensions-${ext}"
+                   if (( ${+FAST_HIGHLIGHT_STYLES[$key]} )); then
                      (( __start=_start_pos-__PBUFLEN, __end=_end_pos-__PBUFLEN ))
                      if (( __start >= 0 )); then
-                       __style="${FAST_HIGHLIGHT_STYLES[${FAST_THEME_NAME}file-extensions-${ext}]}"
+                       __style="${FAST_HIGHLIGHT_STYLES[$key]}"
                        reply+=("$__start $__end $__style")
                        already_added=1
                      fi
