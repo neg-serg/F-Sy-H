@@ -229,6 +229,10 @@ _zsh_highlight_call_widget() {
 
 # Rebind all ZLE widgets to make them invoke _zsh_highlights.
 _zsh_highlight_bind_widgets() {
+  # Batch zle -N bindings without overriding builtin zle
+  local -a __FSYH_BINDS
+  __FSYH_BINDS=()
+  __fsyh_collect() { __FSYH_BINDS+=("$*"); }
   builtin setopt local_options no_ksh_arrays
   local -F2 SECONDS
   local prefix=orig-s${SECONDS/./}-r$(( RANDOM % 1000 )) # unique each time, in case we're sourced more than once
@@ -268,28 +272,31 @@ _zsh_highlight_bind_widgets() {
     # User defined widget: override and rebind old one with prefix "orig-".
     user:*) zle -N -- $prefix-$cur_widget ${widgets[$cur_widget]#*:}
       eval "_zsh_highlight_widget_${(q)prefix}-${(q)cur_widget}() { _zsh_highlight_call_widget ${(q)prefix}-${(q)cur_widget} -- \"\$@\" }"
-      zle -N -- $cur_widget _zsh_highlight_widget_$prefix-$cur_widget;;
+      __fsyh_collect zle -N -- $cur_widget _zsh_highlight_widget_$prefix-$cur_widget;;
 
     # Completion widget: override and rebind old one with prefix "orig-".
     completion:*) zle -C $prefix-$cur_widget ${${(s.:.)widgets[$cur_widget]}[2,3]}
       eval "_zsh_highlight_widget_${(q)prefix}-${(q)cur_widget}() { _zsh_highlight_call_widget ${(q)prefix}-${(q)cur_widget} -- \"\$@\" }"
-      zle -N -- $cur_widget _zsh_highlight_widget_$prefix-$cur_widget;;
+      __fsyh_collect zle -N -- $cur_widget _zsh_highlight_widget_$prefix-$cur_widget;;
 
     # Builtin widget: override and make it call the builtin ".widget".
     builtin) eval "_zsh_highlight_widget_${(q)prefix}-${(q)cur_widget}() { _zsh_highlight_call_widget .${(q)cur_widget} -- \"\$@\" }"
-      zle -N -- $cur_widget _zsh_highlight_widget_$prefix-$cur_widget;;
+      __fsyh_collect zle -N -- $cur_widget _zsh_highlight_widget_$prefix-$cur_widget;;
 
     # Incomplete or nonexistent widget: Bind to z-sy-h directly.
     *)
       if [[ $cur_widget == zle-* ]] && [[ -z $widgets[$cur_widget] ]]; then
         _zsh_highlight_widget_${cur_widget}() { :; _zsh_highlight }
-        zle -N -- $cur_widget _zsh_highlight_widget_$cur_widget
+        __fsyh_collect zle -N -- $cur_widget _zsh_highlight_widget_$cur_widget
       else
         # Default: unhandled case.
         builtin print -r -- >&2 "zsh-syntax-highlighting: unhandled ZLE widget ${(qq)cur_widget}"
       fi
     esac
   done
+
+  # Apply collected zle -N lines in one parse
+  (( ${#__FSYH_BINDS[@]} )) && eval "${(j:; :)__FSYH_BINDS}"
 }
 
 # -------------------------------------------------------------------------------------------------
