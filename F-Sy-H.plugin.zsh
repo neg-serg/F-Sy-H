@@ -296,8 +296,43 @@ _zsh_highlight_bind_widgets() {
   done
 
   # Apply collected zle -N lines in one parse
-  (( ${#__FSYH_BINDS[@]} )) && eval "${(j:; :)__FSYH_BINDS}"
-}
+  # --- optional filtering for faster startup ---
+  local __bind_mode=${FAST_HIGHLIGHT[WIDGETS_MODE]-default}   # default|minimal
+  local __bind_vi=${FAST_HIGHLIGHT[BIND_VI_WIDGETS]-1}        # 1|0
+
+  # Drop vi-* widgets if disabled
+  if [[ $__bind_vi == 0 ]]; then
+    __FSYH_BINDS=( "${(@)__FSYH_BINDS:#*' zle -N -- vi-'*}" )
+  fi
+
+  # Minimal frequently used set (keeps startup fast)
+  if [[ $__bind_mode == minimal ]]; then
+    local -a __keep=(
+      self-insert accept-line undo redo
+      backward-delete-char delete-char
+      kill-word backward-kill-word kill-whole-line
+      yank yank-pop transpose-words
+      backward-char forward-char
+      backward-word forward-word
+      beginning-of-line end-of-line
+      up-line-or-history down-line-or-history
+      beginning-of-history end-of-history
+      complete-word expand-or-complete
+      backward-kill-line kill-line
+      up-case-word down-case-word capitalize-word
+    )
+    local -a __filtered; local __ln __w
+    for __ln in "${__FSYH_BINDS[@]}"; do
+      __w=${${__ln#*' zle -N -- '}%% *}
+      if (( ${__keep[(Ie)${__w}]} )); then
+        __filtered+=("$__ln")
+      fi
+    done
+    __FSYH_BINDS=( "${__filtered[@]}" )
+  fi
+  # --- end filtering ---
+
+  (( ${#__FSYH_BINDS[@]} )) && eval "${(j:; :)__FSYH_BINDS}"}
 
 # -------------------------------------------------------------------------------------------------
 # Setup
