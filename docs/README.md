@@ -1,3 +1,7 @@
+> **⚠️ Archived**: I've switched to native Zsh syntax highlighting, which works significantly faster. This repository is no longer maintained.
+
+---
+
 <h1 align="center"><p>
   <a title="❮ Zi ❯" target="_self" href="https://github.com/z-shell/zi">
   <img width="60px" height="60px" src="https://raw.githubusercontent.com/z-shell/zi/main/docs/images/logo.png" alt="Logo" /></a>
